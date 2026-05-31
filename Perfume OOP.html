@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Perfume OOP — Class Hierarchy Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0906;--surface:#111009;--surface2:#1a1814;
+  --gold:#d4b45a;--gold-light:#f0d898;--gold-dim:#a07c40;
+  --cream:#f5efe0;--cream-dim:#b8aa98;--text:#f0e8d0;--text-dim:#8a8070;
+  --adt:#a088e8;--adt-dim:#3d2e6b;
+  --base:#44b890;--base-dim:#1a4a3a;
+  --edp:#e08050;--edp-dim:#5a2e10;
+  --edt:#5aa0dc;--edt-dim:#1a3a5a;
+  --col:#8acc55;--col-dim:#2a4a18;
+  --border:rgba(212,180,90,0.22);--border-strong:rgba(212,180,90,0.55);
+  --r:10px;--tr:0.3s cubic-bezier(0.4,0,0.2,1);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;font-weight:400;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.4;}
+
+/* SPRAY CANVAS */
+#spray-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;}
+
+/* SCENT floating label */
+.scent-float{position:fixed;pointer-events:none;z-index:9998;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-light);text-shadow:0 0 12px rgba(201,168,76,0.6);animation:scentRise 2.2s ease forwards;white-space:nowrap;}
+@keyframes scentRise{0%{opacity:0;transform:translateY(0) scale(0.8)}20%{opacity:1;transform:translateY(-20px) scale(1)}80%{opacity:0.8;transform:translateY(-80px) scale(1.05)}100%{opacity:0;transform:translateY(-130px) scale(0.9)}}
+
+/* HERO */
+.hero{text-align:center;padding:5rem 2rem 3rem;}
+.hero-eyebrow{font-family:'DM Mono',monospace;font-size:0.72rem;letter-spacing:0.25em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:1.5rem;font-weight:400;}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:400;line-height:1.1;color:var(--cream);}
+.hero h1 em{font-style:italic;color:var(--gold);display:block;}
+.hero-sub{margin-top:1.5rem;font-size:0.82rem;color:var(--cream-dim);letter-spacing:0.08em;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.8;font-weight:400;}
+.hero-divider{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:2.5rem auto;}
+
+/* SECTION */
+section{max-width:1100px;margin:0 auto;padding:0 1.5rem 5rem;}
+.section-label{font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.25em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:2rem;display:flex;align-items:center;gap:1rem;font-weight:400;}
+.section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold-dim),transparent);}
+
+/* UML */
+.uml-svg-container{width:100%;overflow-x:auto;padding:2rem 0;}
+.uml-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:var(--tr);position:relative;overflow:hidden;}
+.uml-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(201,168,76,0.07),transparent 60%);opacity:0;transition:opacity var(--tr);pointer-events:none;}
+.uml-card:hover::before,.uml-card.active::before{opacity:1;}
+.uml-card .card-header{padding:0.7rem 1.1rem 0.5rem;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.64rem;letter-spacing:0.1em;color:var(--gold-dim);text-transform:uppercase;font-weight:400;}
+.uml-card .card-name{padding:0.55rem 1.1rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;border-bottom:1px solid var(--border);}
+.uml-card .card-fields,.uml-card .card-methods{padding:0.5rem 1.1rem;font-family:'DM Mono',monospace;font-size:0.62rem;line-height:1.9;color:var(--cream-dim);font-weight:400;}
+.uml-card .card-methods .pub{color:var(--gold);}
+.uml-card .card-fields .priv{color:var(--edt);}
+.uml-card .card-fields .prot{color:var(--col);}
+.uml-card .card-section-label{font-size:0.57rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;font-weight:400;}
+.node-adt{border-color:rgba(139,111,212,0.4);}
+.node-adt .card-header{color:var(--adt);}
+.node-adt .card-name{color:#c0aee8;}
+.node-adt:hover,.node-adt.active{border-color:var(--adt);box-shadow:0 0 40px rgba(139,111,212,0.25);}
+.node-base{border-color:rgba(58,158,126,0.4);}
+.node-base .card-header{color:var(--base);}
+.node-base .card-name{color:#8acfba;}
+.node-base:hover,.node-base.active{border-color:var(--base);box-shadow:0 0 40px rgba(58,158,126,0.25);}
+.node-edp{border-color:rgba(201,112,64,0.4);}
+.node-edp .card-header{color:var(--edp);}
+.node-edp .card-name{color:#e0a87a;}
+.node-edp:hover,.node-edp.active{border-color:var(--edp);box-shadow:0 0 40px rgba(201,112,64,0.25);}
+.node-edt{border-color:rgba(74,143,201,0.4);}
+.node-edt .card-header{color:var(--edt);}
+.node-edt .card-name{color:#8ac1e8;}
+.node-edt:hover,.node-edt.active{border-color:var(--edt);box-shadow:0 0 40px rgba(74,143,201,0.25);}
+.node-col{border-color:rgba(122,184,72,0.4);}
+.node-col .card-header{color:var(--col);}
+.node-col .card-name{color:#a8d878;}
+.node-col:hover,.node-col.active{border-color:var(--col);box-shadow:0 0 40px rgba(122,184,72,0.25);}
+.tree-svg{width:100%;min-width:700px;display:block;}
+.connector{stroke:var(--gold-dim);stroke-width:1;fill:none;}
+.arrow-head{fill:var(--gold-dim);}
+
+/* OUTPUT PANEL */
+.output-hint{text-align:center;padding:3rem 2rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;color:var(--cream-dim);letter-spacing:0.05em;}
+.output-hint span{display:block;font-family:'DM Mono',monospace;font-style:normal;font-size:0.67rem;letter-spacing:0.2em;color:var(--text-dim);margin-top:0.6rem;}
+.output-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;animation:panelIn 0.4s cubic-bezier(0.4,0,0.2,1);}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.output-panel.visible{display:block;}
+.panel-header{padding:1.2rem 1.8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;}
+.panel-badge{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;padding:0.3rem 0.8rem;border-radius:20px;text-transform:uppercase;font-weight:500;}
+.badge-adt{background:var(--adt-dim);color:var(--adt);}
+.badge-base{background:var(--base-dim);color:var(--base);}
+.badge-edp{background:var(--edp-dim);color:var(--edp);}
+.badge-edt{background:var(--edt-dim);color:var(--edt);}
+.badge-col{background:var(--col-dim);color:var(--col);}
+.panel-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:var(--cream);}
+.panel-method-tag{margin-left:auto;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--cream-dim);letter-spacing:0.1em;}
+.panel-body{padding:1.8rem;display:grid;gap:1.2rem;}
+.output-block{background:var(--surface2);border-radius:8px;border:1px solid var(--border);padding:1.2rem 1.5rem;position:relative;overflow:hidden;}
+.output-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.ob-describe::before{background:var(--gold);}
+.ob-weather::before{background:var(--edt);}
+.output-block-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:0.8rem;font-weight:500;}
+.output-line{font-size:0.85rem;line-height:2.1;color:var(--text);letter-spacing:0.02em;font-weight:400;}
+.output-line .highlight{color:var(--gold-light);font-weight:500;}
+.output-line .muted{color:var(--cream-dim);}
+.output-line .accent-edp{color:var(--edp);}
+.output-line .accent-edt{color:var(--edt);}
+.output-line .accent-col{color:var(--col);}
+.output-line .accent-base{color:var(--base);}
+.output-line .accent-adt{color:var(--adt);}
+.override-note{display:inline-flex;align-items:center;gap:0.5rem;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--gold);letter-spacing:0.1em;background:rgba(212,180,90,0.1);border:1px solid rgba(212,180,90,0.3);border-radius:20px;padding:0.3rem 0.8rem;margin-top:0.6rem;font-weight:400;}
+.override-note::before{content:'⟳';}
+.poly-note{margin-top:0.8rem;padding:0.8rem 1.2rem;background:rgba(160,136,232,0.08);border:1px solid rgba(160,136,232,0.25);border-radius:8px;font-family:'DM Mono',monospace;font-size:0.64rem;color:var(--adt);line-height:1.8;letter-spacing:0.03em;}
+
+/* FILTER / SEARCH */
+.filter-bar{display:flex;gap:0.6rem;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center;}
+.filter-btn{font-family:'DM Mono',monospace;font-size:0.64rem;letter-spacing:0.1em;padding:0.45rem 1.1rem;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--cream-dim);cursor:pointer;transition:var(--tr);text-transform:uppercase;font-weight:400;}
+.filter-btn:hover{color:var(--cream);border-color:var(--border-strong);}
+.filter-btn.active{color:#0a0906;font-weight:500;}
+.filter-btn.f-all.active{background:var(--gold);border-color:var(--gold);}
+.filter-btn.f-edp.active{background:var(--edp);border-color:var(--edp);}
+.filter-btn.f-edt.active{background:var(--edt);border-color:var(--edt);}
+.filter-btn.f-col.active{background:var(--col);border-color:var(--col);}
+.filter-count{font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--cream-dim);letter-spacing:0.1em;margin-left:auto;}
+.search-wrap{position:relative;margin-bottom:1.2rem;}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0.7rem 1rem 0.7rem 2.4rem;font-family:'DM Mono',monospace;font-size:0.74rem;color:var(--cream);letter-spacing:0.05em;outline:none;transition:border-color var(--tr);font-weight:400;}
+.search-input::placeholder{color:var(--cream-dim);}
+.search-input:focus{border-color:var(--gold-dim);}
+.search-icon{position:absolute;left:0.8rem;top:50%;transform:translateY(-50%);color:var(--cream-dim);pointer-events:none;}
+.sort-select{background:var(--surface);border:1px solid var(--border);color:var(--cream);padding:0.35rem 0.7rem;border-radius:6px;font-family:'DM Mono',monospace;font-size:0.64rem;outline:none;cursor:pointer;letter-spacing:0.05em;font-weight:400;}
+.sort-select option{background:var(--surface2);}
+
+/* COLLECTION */
+.collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:1.1rem;}
+.perfume-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem 1.6rem;cursor:pointer;transition:var(--tr);position:relative;overflow:hidden;user-select:none;}
+.perfume-card:hover{transform:translateY(-4px);}
+.perfume-card.hidden{display:none;}
+.spray-hint{position:absolute;top:0.8rem;right:0.9rem;font-size:0.62rem;color:var(--cream-dim);opacity:0;transition:opacity 0.2s;font-family:'DM Mono',monospace;letter-spacing:0.05em;}
+.perfume-card:hover .spray-hint{opacity:1;}
+.pc-type-badge{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;padding:0.25rem 0.7rem;border-radius:20px;display:inline-block;margin-bottom:0.9rem;text-transform:uppercase;font-weight:500;}
+.pc-name{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:var(--cream);margin-bottom:0.2rem;line-height:1.3;}
+.pc-brand{font-size:0.72rem;letter-spacing:0.1em;color:var(--cream-dim);margin-bottom:0.9rem;text-transform:uppercase;font-weight:400;}
+.pc-meta{display:flex;gap:0.6rem;flex-wrap:wrap;}
+.pc-tag{font-size:0.67rem;padding:0.2rem 0.6rem;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--cream-dim);font-family:'DM Mono',monospace;font-weight:400;}
+.pc-longevity{margin-top:0.8rem;display:flex;align-items:center;gap:0.5rem;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--cream-dim);}
+.longevity-bar{flex:1;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.longevity-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+.pc-edp{border-color:rgba(201,112,64,0.25);}
+.pc-edp:hover,.pc-edp.active{border-color:var(--edp);box-shadow:0 8px 32px rgba(201,112,64,0.15);}
+.pc-edt{border-color:rgba(74,143,201,0.25);}
+.pc-edt:hover,.pc-edt.active{border-color:var(--edt);box-shadow:0 8px 32px rgba(74,143,201,0.15);}
+.pc-col{border-color:rgba(122,184,72,0.25);}
+.pc-col:hover,.pc-col.active{border-color:var(--col);box-shadow:0 8px 32px rgba(122,184,72,0.15);}
+
+/* COLLECTION OUTPUT */
+.collection-output{margin-top:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:none;animation:panelIn 0.35s ease;}
+.collection-output.visible{display:block;}
+.co-header{padding:1rem 1.8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.co-perfume-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-style:italic;color:var(--cream);font-weight:600;}
+.co-body{padding:1.5rem 1.8rem;display:grid;gap:1rem;}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:3rem;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--text-dim);font-size:1.1rem;}
+
+/* SOURCE */
+.source-tabs{display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;}
+.src-tab{font-family:'DM Mono',monospace;font-size:0.64rem;letter-spacing:0.08em;padding:0.35rem 0.9rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--cream-dim);cursor:pointer;transition:var(--tr);font-weight:400;}
+.src-tab:hover{color:var(--cream);border-color:var(--border-strong);}
+.src-tab.active{background:var(--surface2);color:var(--gold);border-color:var(--gold-dim);font-weight:500;}
+.code-block{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1.5rem;font-family:'DM Mono',monospace;font-size:0.72rem;line-height:2.1;color:var(--cream-dim);overflow-x:auto;display:none;white-space:pre;}
+.code-block.visible{display:block;}
+.kw{color:#b0a0f0;font-weight:500;}.fn{color:#80c8e8;}.cl{color:#88d8a8;font-weight:500;}.st{color:#d4b468;}.cm{color:#6a6458;}.dc{color:#b0b898;}.pm{color:#f0b890;}
+
+footer{border-top:1px solid var(--border);padding:2rem 1.5rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;color:var(--cream-dim);}
+footer em{font-style:normal;color:var(--gold-dim);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero{animation:fadeUp 0.7s ease both;}
+.uml-svg-container{animation:fadeUp 0.7s ease 0.15s both;}
+</style>
+</head>
+<body>
+<canvas id="spray-canvas"></canvas>
+
+<div class="hero">
+  <p class="hero-eyebrow">2026 자료구조 과제 2 · OOP Polymorphism Visualizer</p>
+  <h1>Perfume<em>System</em></h1>
+  <p class="hero-sub">클래스 상속 구조와 다형성을 인터랙티브하게 시각화합니다.<br>향수 카드를 클릭하면 스프레이 파티클 효과와 메서드 실행 결과를 확인하세요 🌸</p>
+  <div class="hero-divider"></div>
+</div>
+
+<!-- 01 UML -->
+<section>
+  <p class="section-label">01 — Class Hierarchy &amp; UML</p>
+  <div class="uml-svg-container">
+    <svg class="tree-svg" viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+      <line x1="450" y1="198" x2="450" y2="248" class="connector"/>
+      <polygon points="450,244 445,232 455,232" class="arrow-head"/>
+      <line x1="450" y1="430" x2="450" y2="452" class="connector"/>
+      <line x1="180" y1="452" x2="720" y2="452" class="connector"/>
+      <line x1="180" y1="452" x2="180" y2="488" class="connector"/>
+      <polygon points="180,484 175,472 185,472" class="arrow-head"/>
+      <line x1="450" y1="452" x2="450" y2="488" class="connector"/>
+      <polygon points="450,484 445,472 455,472" class="arrow-head"/>
+      <line x1="720" y1="452" x2="720" y2="488" class="connector"/>
+      <polygon points="720,484 715,472 725,472" class="arrow-head"/>
+      <text x="460" y="228" font-family="DM Mono,monospace" font-size="9" fill="#3d2e6b" letter-spacing="1">implements</text>
+      <text x="300" y="468" font-family="DM Mono,monospace" font-size="9" fill="#3a4a30" letter-spacing="1">extends</text>
+      <text x="460" y="468" font-family="DM Mono,monospace" font-size="9" fill="#3a4a30" letter-spacing="1">extends</text>
+      <text x="570" y="468" font-family="DM Mono,monospace" font-size="9" fill="#3a4a30" letter-spacing="1">extends</text>
+      <foreignObject x="290" y="20" width="320" height="178">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="uml-card node-adt" id="node-adt" onclick="selectNode('adt')">
+          <div class="card-header">«abstract» class</div>
+          <div class="card-name">PerfumeADT</div>
+          <div class="card-fields"><div class="card-section-label">properties (abstract)</div><div><span style="color:var(--adt)">+ </span><span class="priv">name</span> : property</div><div><span style="color:var(--adt)">+ </span><span class="priv">brand</span> : property</div></div>
+          <div class="card-methods"><div class="card-section-label">methods (abstract)</div><div><span class="pub">+ describe()</span></div><div><span class="pub">+ recommend_weather()</span></div></div>
+        </div>
+      </foreignObject>
+      <foreignObject x="255" y="248" width="390" height="182">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="uml-card node-base" id="node-base" onclick="selectNode('base')">
+          <div class="card-header">class (base)</div>
+          <div class="card-name">Perfume</div>
+          <div class="card-fields"><div class="card-section-label">fields</div><div><span class="priv">– __name</span> : string &nbsp;<span class="priv">– __brand</span> : string</div><div><span class="prot"># _scent_family</span> &nbsp;<span class="prot"># _mood</span> &nbsp;<span class="prot"># _longevity</span></div></div>
+          <div class="card-methods"><div class="card-section-label">methods</div><div><span class="pub">+ name</span> : property &nbsp;<span class="pub">+ brand</span> : property</div><div><span class="pub">+ describe()</span> &nbsp;<span class="pub">+ recommend_weather()</span></div></div>
+        </div>
+      </foreignObject>
+      <foreignObject x="20" y="488" width="315" height="145">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="uml-card node-edp" id="node-edp" onclick="selectNode('edp')">
+          <div class="card-header">class · EDP</div>
+          <div class="card-name">EauDeParfum</div>
+          <div class="card-fields"><div class="card-section-label">longevity (auto)</div><div><span class="priv">6~8시간</span></div></div>
+          <div class="card-methods"><div class="card-section-label">overridden</div><div><span class="pub">+ describe()</span></div><div><span class="pub">+ recommend_weather()</span></div></div>
+        </div>
+      </foreignObject>
+      <foreignObject x="292" y="488" width="315" height="145">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="uml-card node-edt" id="node-edt" onclick="selectNode('edt')">
+          <div class="card-header">class · EDT</div>
+          <div class="card-name">EauDeToilette</div>
+          <div class="card-fields"><div class="card-section-label">longevity (auto)</div><div><span class="priv">3~5시간</span></div></div>
+          <div class="card-methods"><div class="card-section-label">overridden</div><div><span class="pub">+ describe()</span></div><div><span class="pub">+ recommend_weather()</span></div></div>
+        </div>
+      </foreignObject>
+      <foreignObject x="564" y="488" width="315" height="145">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="uml-card node-col" id="node-col" onclick="selectNode('col')">
+          <div class="card-header">class · Cologne</div>
+          <div class="card-name">Cologne</div>
+          <div class="card-fields"><div class="card-section-label">longevity (auto)</div><div><span class="priv">1~2시간</span></div></div>
+          <div class="card-methods"><div class="card-section-label">overridden</div><div><span class="pub">+ describe()</span></div><div><span class="pub">+ recommend_weather()</span></div></div>
+        </div>
+      </foreignObject>
+    </svg>
+  </div>
+  <div id="uml-hint" class="output-hint">클래스 노드를 클릭하면 메서드 실행 결과가 표시됩니다<span>↑ Click any class node above</span></div>
+  <div id="uml-output" class="output-panel">
+    <div class="panel-header"><span id="out-badge" class="panel-badge"></span><span id="out-title" class="panel-title"></span><span id="out-method-tag" class="panel-method-tag"></span></div>
+    <div class="panel-body" id="out-body"></div>
+  </div>
+</section>
+
+<!-- 02 Collection -->
+<section>
+  <p class="section-label">02 — Perfume Collection · <span id="total-count">0</span> Instances</p>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="search-input" type="text" placeholder="향수 이름, 브랜드, 향조로 검색..." oninput="applyFilters()"/>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn f-all active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn f-edp" onclick="setFilter('edp',this)">Eau de Parfum</button>
+    <button class="filter-btn f-edt" onclick="setFilter('edt',this)">Eau de Toilette</button>
+    <button class="filter-btn f-col" onclick="setFilter('col',this)">Cologne</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:0.8rem;">
+      <select class="sort-select" id="sort-select" onchange="applyFilters()">
+        <option value="default">기본 순</option>
+        <option value="name">이름 A-Z</option>
+        <option value="brand">브랜드</option>
+        <option value="longevity">지속력 높은 순</option>
+      </select>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+  </div>
+
+  <div class="collection-grid" id="collection-grid"></div>
+  <div id="empty-state" class="empty-state" style="display:none">검색 결과가 없습니다 🌸</div>
+
+  <div id="collection-output" class="collection-output">
+    <div class="co-header" id="co-header"></div>
+    <div class="co-body" id="co-body"></div>
+  </div>
+</section>
+
+<!-- 03 Source -->
+<section>
+  <p class="section-label">03 — Python Source Code</p>
+  <div class="source-tabs" id="src-tabs"></div>
+  <div id="src-panels"></div>
+</section>
+
+<footer><em>Perfume OOP System</em> — 2026 자료구조 과제 2 · Polymorphism Visualizer</footer>
+
+<script>
+/* ── SPRAY ENGINE ── */
+const canvas = document.getElementById('spray-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [], animFrame = null;
+
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+const SCENT_WORDS = {
+  edp:['✨ 잔향','Sillage','Amber','Oud','Musk','깊은 향','Woody'],
+  edt:['🌿 Fresh','봄 향기','Light','Floral','Clean','Breeze','Green'],
+  col:['🍋 Zest','상쾌함','Citrus','Energy','Aqua','Refresh','Marine'],
+};
+const SPRAY_COLORS = {
+  edp:['#c97040','#e0a87a','#f0c8a0','#b86030','#ffd8a0'],
+  edt:['#4a8fc9','#8ac1e8','#a0d0f0','#3a6fa0','#c0e8ff'],
+  col:['#7ab848','#a8d878','#c8f090','#5a9030','#e0ffa0'],
+};
+
+class Particle {
+  constructor(x,y,type){
+    this.x=x; this.y=y;
+    const c=SPRAY_COLORS[type]||SPRAY_COLORS.edp;
+    this.color=c[Math.floor(Math.random()*c.length)];
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*7+2;
+    this.vx=Math.cos(angle)*speed;
+    this.vy=Math.sin(angle)*speed-Math.random()*3;
+    this.alpha=1;
+    this.radius=Math.random()*5+2;
+    this.gravity=0.13;
+    this.decay=Math.random()*0.015+0.01;
+    this.isMist=Math.random()<0.3;
+    if(this.isMist){this.radius=Math.random()*14+6;this.decay=0.02;this.alpha=0.4;}
+  }
+  update(){this.x+=this.vx;this.y+=this.vy;this.vy+=this.gravity;this.vx*=0.97;this.alpha-=this.decay;}
+  draw(c){
+    c.save();c.globalAlpha=Math.max(0,this.alpha);
+    if(this.isMist){
+      const g=c.createRadialGradient(this.x,this.y,0,this.x,this.y,this.radius);
+      g.addColorStop(0,this.color);g.addColorStop(1,'transparent');c.fillStyle=g;
+    } else {c.fillStyle=this.color;}
+    c.beginPath();c.arc(this.x,this.y,this.radius,0,Math.PI*2);c.fill();c.restore();
+  }
+}
+
+function spawnSpray(x,y,type,count=90){
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      particles.push(new Particle(x,y,type));
+      if(!animFrame) animLoop();
+    }, Math.random()*130);
+  }
+  const words=SCENT_WORDS[type]||SCENT_WORDS.edp;
+  const word=words[Math.floor(Math.random()*words.length)];
+  const el=document.createElement('div');
+  el.className='scent-float';
+  el.textContent=word;
+  el.style.left=(x+(Math.random()-0.5)*70)+'px';
+  el.style.top=(y-10)+'px';
+  el.style.fontSize=(Math.random()*0.4+0.85)+'rem';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2500);
+  // extra words
+  if(Math.random()>0.4){
+    setTimeout(()=>{
+      const w2=words[Math.floor(Math.random()*words.length)];
+      const el2=document.createElement('div');
+      el2.className='scent-float';el2.textContent=w2;
+      el2.style.left=(x+(Math.random()-0.5)*90)+'px';
+      el2.style.top=(y+5)+'px';el2.style.fontSize='0.8rem';
+      document.body.appendChild(el2);
+      setTimeout(()=>el2.remove(),2500);
+    },300);
+  }
+}
+
+function animLoop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles=particles.filter(p=>p.alpha>0);
+  particles.forEach(p=>{p.update();p.draw(ctx);});
+  if(particles.length>0){animFrame=requestAnimationFrame(animLoop);}
+  else{animFrame=null;}
+}
+
+/* ── DATA ── */
+const NODES = {
+  adt:{badge:'badge-adt',label:'Abstract Class',title:'PerfumeADT',
+    describe:['<span class="accent-adt">PerfumeADT</span>는 추상 클래스(ABC)입니다.','직접 인스턴스화할 수 없으며, 모든 하위 클래스는','<span class="highlight">describe()</span>와 <span class="highlight">recommend_weather()</span>를 반드시 구현해야 합니다.','<span class="muted">→ abstractmethod 데코레이터로 강제 구현 보장</span>'],
+    weather:['<span class="accent-adt">Abstract method</span> — 구현 없음.','하위 클래스에서 오버라이딩됩니다.'],
+    polyNote:'ABC(Abstract Base Class) 계약 정의: 모든 향수 타입은 동일한 인터페이스를 통해 호출되지만, 각기 다른 동작을 수행합니다.'},
+  base:{badge:'badge-base',label:'Base Class',title:'Perfume',
+    describe:['<span class="accent-base">[Base describe()]</span> — 공통 정보 출력','<span class="highlight">[brand]</span> <span class="muted">name</span>','<span class="muted">향조: scent_family | 분위기: mood</span>','<span class="muted">지속력: longevity</span>','<span class="muted">→ super().describe()로 하위 클래스에서 재사용</span>'],
+    weather:['<span class="accent-base">모든 날씨에 무난하게 어울립니다.</span>','<span class="muted">→ 하위 클래스에서 계절 특화 메시지로 오버라이딩됨</span>'],
+    polyNote:'Base class의 describe()는 공통 정보를 출력하며, 하위 클래스는 super().describe()로 이를 호출한 뒤 추가 설명을 덧붙입니다.'},
+  edp:{badge:'badge-edp',label:'EauDeParfum',title:'EauDeParfum',
+    describe:['<span class="accent-edp">[EauDeParfum.describe()]</span> — 오버라이딩됨','super().describe() 호출 후 추가 출력:','✨ <span class="highlight">[EDP]</span> <span class="accent-edp">깊고 풍부한 잔향이 오래 유지되는 고농축 제품입니다.</span>','<span class="muted">longevity: 6~8시간 (자동 설정)</span>'],
+    weather:['추천 계절: <span class="accent-edp">서늘한 가을이나 추운 겨울</span>','<span class="muted">→ Base의 메시지를 계절 특화 메시지로 교체</span>'],
+    polyNote:'EauDeParfum.describe()는 super().describe()를 호출하여 공통 정보를 유지하면서, EDP만의 추가 설명을 덧붙입니다.'},
+  edt:{badge:'badge-edt',label:'EauDeToilette',title:'EauDeToilette',
+    describe:['<span class="accent-edt">[EauDeToilette.describe()]</span> — 오버라이딩됨','super().describe() 호출 후 추가 출력:','🌿 <span class="highlight">[EDT]</span> <span class="accent-edt">가벼운 농도로 일상에서 부담 없이 사용하기 좋습니다.</span>','<span class="muted">longevity: 3~5시간 (자동 설정)</span>'],
+    weather:['추천 계절: <span class="accent-edt">따뜻한 봄이나 초여름</span>','<span class="muted">→ EDT는 가벼운 향에 맞는 따뜻한 계절 추천</span>'],
+    polyNote:'같은 recommend_weather() 호출이라도 객체 타입에 따라 결과가 다릅니다. EauDeToilette → 봄/초여름, EauDeParfum → 가을/겨울 — 이것이 다형성입니다.'},
+  col:{badge:'badge-col',label:'Cologne',title:'Cologne',
+    describe:['<span class="accent-col">[Cologne.describe()]</span> — 오버라이딩됨','super().describe() 호출 후 추가 출력:','🍋 <span class="highlight">[Cologne]</span> <span class="accent-col">달달한 {scent_family} 향취로 리프레시하기 좋습니다.</span>','<span class="muted">longevity: 1~2시간 (자동 설정)</span>'],
+    weather:['추천 계절: <span class="accent-col">꽃이 만연한 봄</span>','<span class="muted">→ 가장 가볍고 상쾌한 타입에 맞는 봄 추천</span>'],
+    polyNote:'Cologne은 _scent_family를 describe()에서 직접 f-string으로 활용하여, 인스턴스마다 개인화된 메시지를 출력합니다.'},
+};
+
+const PERFUMES = [
+  // EDP
+  {type:'edp',name:'Santal 33',           brand:'Le Labo',        scent:'Woody',         mood:'Chic',         lon:'6~8시간',lonPct:85},
+  {type:'edp',name:'Blanche',             brand:'Byredo',         scent:'Floral/Musk',   mood:'Pure',         lon:'6~8시간',lonPct:85},
+  {type:'edp',name:'Sauvage',             brand:'Dior',           scent:'Aromatic',      mood:'Masculine',    lon:'6~8시간',lonPct:85},
+  {type:'edp',name:'Black Opium',         brand:'YSL',            scent:'Oriental',      mood:'Seductive',    lon:'7~9시간',lonPct:88},
+  {type:'edp',name:'Coco Mademoiselle',   brand:'Chanel',         scent:'Oriental',      mood:'Elegant',      lon:'7~9시간',lonPct:90},
+  {type:'edp',name:'La Vie Est Belle',    brand:'Lancôme',        scent:'Gourmand',      mood:'Joyful',       lon:'6~8시간',lonPct:82},
+  {type:'edp',name:'Mon Guerlain',        brand:'Guerlain',       scent:'Lavender',      mood:'Soft',         lon:'6~8시간',lonPct:80},
+  {type:'edp',name:'Flowerbomb',          brand:'Viktor & Rolf',  scent:'Floral',        mood:'Romantic',     lon:'6~8시간',lonPct:85},
+  {type:'edp',name:'Oud Wood',            brand:'Tom Ford',       scent:'Woody/Oud',     mood:'Mysterious',   lon:'8~10시간',lonPct:95},
+  // EDT
+  {type:'edt',name:'Lazy Sunday Morning', brand:'Maison Margiela',scent:'Floral/Musk',   mood:'Clean',        lon:'3~5시간',lonPct:50},
+  {type:'edt',name:'Un Jardin sur le Nil',brand:'Hermès',         scent:'Green/Fresh',   mood:'Peaceful',     lon:'3~5시간',lonPct:50},
+  {type:'edt',name:'Chance Eau Tendre',   brand:'Chanel',         scent:'Floral/Citrus', mood:'Youthful',     lon:'4~6시간',lonPct:60},
+  {type:'edt',name:'Light Blue',          brand:'Dolce & Gabbana',scent:'Citrus/Floral', mood:'Mediterranean',lon:'3~5시간',lonPct:50},
+  {type:'edt',name:'Acqua di Giò',        brand:'Giorgio Armani', scent:'Aquatic',       mood:'Fresh',        lon:'4~6시간',lonPct:58},
+  {type:'edt',name:"Terre d'Hermès",      brand:'Hermès',         scent:'Woody/Earth',   mood:'Refined',      lon:'4~6시간',lonPct:62},
+  {type:'edt',name:'Davidoff Cool Water', brand:'Davidoff',       scent:'Aquatic',       mood:'Sporty',       lon:'3~4시간',lonPct:42},
+  {type:'edt',name:'Pleasures',           brand:'Estée Lauder',   scent:'Floral',        mood:'Cheerful',     lon:'3~5시간',lonPct:50},
+  // Cologne
+  {type:'col',name:'Blackberry & Bay',    brand:'Jo Malone',      scent:'Fruity',        mood:'Fresh',        lon:'1~2시간',lonPct:20},
+  {type:'col',name:'Wood Sage & Sea Salt',brand:'Jo Malone',      scent:'Woody/Marine',  mood:'Natural',      lon:'1~2시간',lonPct:20},
+  {type:'col',name:'Neroli Portofino',    brand:'Tom Ford',       scent:'Citrus/Floral', mood:'Sunny',        lon:'2~3시간',lonPct:28},
+  {type:'col',name:'Eau de Cologne',      brand:'Maison Margiela',scent:'Citrus',        mood:'Classic',      lon:'1~2시간',lonPct:18},
+  {type:'col',name:'4711 Original',       brand:'4711',           scent:'Citrus/Herbal', mood:'Timeless',     lon:'1~3시간',lonPct:22},
+  {type:'col',name:'Blue Seduction',      brand:'Antonio Banderas',scent:'Aquatic',      mood:'Casual',       lon:'1~2시간',lonPct:15},
+];
+
+const TYPE_INFO = {
+  col:{label:'Cologne',        badgeClass:'badge-col',cardClass:'pc-col',lonColor:'#7ab848'},
+  edt:{label:'Eau de Toilette',badgeClass:'badge-edt',cardClass:'pc-edt',lonColor:'#4a8fc9'},
+  edp:{label:'Eau de Parfum',  badgeClass:'badge-edp',cardClass:'pc-edp',lonColor:'#c97040'},
+};
+
+/* ── UML ── */
+let activeNode=null;
+function selectNode(id){
+  if(activeNode===id){document.getElementById('node-'+id)?.classList.remove('active');document.getElementById('uml-output').classList.remove('visible');document.getElementById('uml-hint').style.display='';activeNode=null;return;}
+  if(activeNode) document.getElementById('node-'+activeNode)?.classList.remove('active');
+  activeNode=id;
+  document.getElementById('node-'+id)?.classList.add('active');
+  const n=NODES[id];
+  document.getElementById('uml-hint').style.display='none';
+  const badge=document.getElementById('out-badge');
+  badge.className='panel-badge '+n.badge;badge.textContent=n.label;
+  document.getElementById('out-title').textContent=n.title;
+  document.getElementById('out-method-tag').textContent='describe() · recommend_weather()';
+  document.getElementById('out-body').innerHTML=`
+    <div class="output-block ob-describe">
+      <div class="output-block-label">describe() → 출력 결과</div>
+      ${n.describe.map(l=>`<div class="output-line">${l}</div>`).join('')}
+      ${(id!=='adt'&&id!=='base')?'<div class="override-note">오버라이딩된 메서드</div>':''}
+    </div>
+    <div class="output-block ob-weather">
+      <div class="output-block-label">recommend_weather() → 출력 결과</div>
+      ${n.weather.map(l=>`<div class="output-line">${l}</div>`).join('')}
+      ${(id!=='adt'&&id!=='base')?'<div class="override-note">오버라이딩된 메서드</div>':''}
+    </div>
+    <div class="poly-note">💡 다형성 포인트: ${n.polyNote}</div>`;
+  document.getElementById('uml-output').classList.add('visible');
+  document.getElementById('uml-output').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ── FILTER ── */
+let currentFilter='all', activeCard=null;
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function applyFilters(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  const sort=document.getElementById('sort-select').value;
+  const cards=Array.from(document.querySelectorAll('.perfume-card'));
+  let visible=0;
+  cards.forEach(card=>{
+    const p=PERFUMES[+card.dataset.idx];
+    const mf=currentFilter==='all'||p.type===currentFilter;
+    const ms=!q||[p.name,p.brand,p.scent,p.mood].some(v=>v.toLowerCase().includes(q));
+    if(mf&&ms){card.classList.remove('hidden');visible++;}
+    else{card.classList.add('hidden');}
+  });
+  // sort
+  const grid=document.getElementById('collection-grid');
+  cards.filter(c=>!c.classList.contains('hidden')).sort((a,b)=>{
+    const pa=PERFUMES[+a.dataset.idx],pb=PERFUMES[+b.dataset.idx];
+    if(sort==='name') return pa.name.localeCompare(pb.name);
+    if(sort==='brand') return pa.brand.localeCompare(pb.brand);
+    if(sort==='longevity') return pb.lonPct-pa.lonPct;
+    return +a.dataset.idx - +b.dataset.idx;
+  }).forEach(c=>grid.appendChild(c));
+  document.getElementById('empty-state').style.display=visible===0?'':'none';
+  document.getElementById('filter-count').textContent=`${visible}개 표시`;
+}
+
+/* ── COLLECTION BUILD ── */
+function buildCollection(){
+  const grid=document.getElementById('collection-grid');
+  PERFUMES.forEach((p,i)=>{
+    const ti=TYPE_INFO[p.type];
+    const card=document.createElement('div');
+    card.className=`perfume-card pc-${p.type}`;
+    card.dataset.idx=i;
+    card.innerHTML=`
+      <span class="spray-hint">tap to spray 🌸</span>
+      <span class="pc-type-badge ${ti.badgeClass}">${ti.label}</span>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-brand">${p.brand}</div>
+      <div class="pc-meta"><span class="pc-tag">${p.scent}</span><span class="pc-tag">${p.mood}</span></div>
+      <div class="pc-longevity"><span>${p.lon}</span><div class="longevity-bar"><div class="longevity-fill" style="width:${p.lonPct}%;background:${ti.lonColor}"></div></div></div>`;
+    card.addEventListener('click',e=>{
+      const rect=card.getBoundingClientRect();
+      spawnSpray(e.clientX||rect.left+rect.width/2, e.clientY||rect.top+rect.height/2, p.type, 90);
+      selectCard(i);
+    });
+    grid.appendChild(card);
+  });
+  document.getElementById('total-count').textContent=PERFUMES.length;
+  applyFilters();
+}
+
+function selectCard(idx){
+  if(activeCard===idx){
+    document.querySelector(`.perfume-card[data-idx="${idx}"]`)?.classList.remove('active');
+    document.getElementById('collection-output').classList.remove('visible');
+    activeCard=null;return;
+  }
+  if(activeCard!==null) document.querySelector(`.perfume-card[data-idx="${activeCard}"]`)?.classList.remove('active');
+  activeCard=idx;
+  document.querySelector(`.perfume-card[data-idx="${idx}"]`)?.classList.add('active');
+  const p=PERFUMES[idx],ti=TYPE_INFO[p.type],n=NODES[p.type];
+  document.getElementById('co-header').innerHTML=`
+    <span class="panel-badge ${n.badge}">${ti.label}</span>
+    <span class="co-perfume-name">${p.name}</span>
+    <span style="font-size:0.7rem;color:var(--cream-dim);letter-spacing:0.08em;text-transform:uppercase">${p.brand}</span>`;
+  const extra={edp:`✨ <span class="accent-edp">[EDP] 깊고 풍부한 잔향이 오래 유지되는 고농축 제품입니다.</span>`,edt:`🌿 <span class="accent-edt">[EDT] 가벼운 농도로 일상에서 부담 없이 사용하기 좋습니다.</span>`,col:`🍋 <span class="accent-col">[Cologne] 달달한 ${p.scent} 향취로 리프레시하기 좋습니다.</span>`};
+  const wx={edp:`추천 계절: <span class="accent-edp">서늘한 가을이나 추운 겨울</span>`,edt:`추천 계절: <span class="accent-edt">따뜻한 봄이나 초여름</span>`,col:`추천 계절: <span class="accent-col">꽃이 만연한 봄</span>`};
+  const cn={edp:'EauDeParfum',edt:'EauDeToilette',col:'Cologne'};
+  document.getElementById('co-body').innerHTML=`
+    <div class="output-block ob-describe">
+      <div class="output-block-label">${cn[p.type]}.describe() 실행 결과</div>
+      <div class="output-line"><span class="muted">→ super().describe() 호출:</span></div>
+      <div class="output-line"><span class="highlight">[${p.brand}] ${p.name}</span></div>
+      <div class="output-line"><span class="muted">향조: ${p.scent} | 분위기: ${p.mood}</span></div>
+      <div class="output-line"><span class="muted">지속력: ${p.lon}</span></div>
+      <div class="output-line" style="margin-top:0.3rem">${extra[p.type]}</div>
+      <div class="override-note">오버라이딩된 메서드 실행됨</div>
+    </div>
+    <div class="output-block ob-weather">
+      <div class="output-block-label">recommend_weather() 실행 결과</div>
+      <div class="output-line">${wx[p.type]}</div>
+      <div class="override-note">오버라이딩된 메서드 실행됨</div>
+    </div>
+    <div class="poly-note">💡 <code style="color:var(--gold-light)">perfume_collection[${idx}].recommend_weather()</code> 호출 시 런타임에 <strong>${ti.label}</strong>의 메서드가 동적으로 선택됩니다. (다형성)</div>`;
+  document.getElementById('collection-output').classList.add('visible');
+  document.getElementById('collection-output').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ── SOURCE ── */
+const SOURCES = {
+  'perfume_adt.py':`<span class="kw">from</span> abc <span class="kw">import</span> ABC, abstractmethod\n\n<span class="kw">class</span> <span class="cl">PerfumeADT</span>(ABC):\n    <span class="dc">@property</span>\n    <span class="dc">@abstractmethod</span>\n    <span class="kw">def</span> <span class="fn">name</span>(<span class="pm">self</span>): <span class="kw">pass</span>\n\n    <span class="dc">@property</span>\n    <span class="dc">@abstractmethod</span>\n    <span class="kw">def</span> <span class="fn">brand</span>(<span class="pm">self</span>): <span class="kw">pass</span>\n\n    <span class="dc">@abstractmethod</span>\n    <span class="kw">def</span> <span class="fn">describe</span>(<span class="pm">self</span>): <span class="kw">pass</span>\n\n    <span class="dc">@abstractmethod</span>\n    <span class="kw">def</span> <span class="fn">recommend_weather</span>(<span class="pm">self</span>): <span class="kw">pass</span>`,
+  'perfume.py':`<span class="kw">from</span> perfume_adt <span class="kw">import</span> PerfumeADT\n\n<span class="kw">class</span> <span class="cl">Perfume</span>(<span class="cl">PerfumeADT</span>):\n    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="pm">self</span>, name, brand, scent_family, mood, longevity):\n        <span class="pm">self</span>.__name = name\n        <span class="pm">self</span>.__brand = brand\n        <span class="pm">self</span>._scent_family = scent_family\n        <span class="pm">self</span>._mood = mood\n        <span class="pm">self</span>._longevity = longevity\n\n    <span class="dc">@property</span>\n    <span class="kw">def</span> <span class="fn">name</span>(<span class="pm">self</span>): <span class="kw">return</span> <span class="pm">self</span>.__name\n\n    <span class="dc">@property</span>\n    <span class="kw">def</span> <span class="fn">brand</span>(<span class="pm">self</span>): <span class="kw">return</span> <span class="pm">self</span>.__brand\n\n    <span class="kw">def</span> <span class="fn">describe</span>(<span class="pm">self</span>):\n        print(f<span class="st">"[{self.brand}] {self.name}"</span>)\n        print(f<span class="st">"향조: {self._scent_family} | 분위기: {self._mood}"</span>)\n        print(f<span class="st">"지속력: {self._longevity}"</span>)\n\n    <span class="kw">def</span> <span class="fn">recommend_weather</span>(<span class="pm">self</span>):\n        print(<span class="st">"모든 날씨에 무난하게 어울립니다."</span>)`,
+  'eau_de_parfum.py':`<span class="kw">from</span> perfume <span class="kw">import</span> Perfume\n\n<span class="kw">class</span> <span class="cl">EauDeParfum</span>(<span class="cl">Perfume</span>):\n    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="pm">self</span>, name, brand, scent_family, mood):\n        <span class="fn">super()</span>.__init__(name, brand, scent_family, mood, <span class="st">"6~8시간"</span>)\n\n    <span class="kw">def</span> <span class="fn">describe</span>(<span class="pm">self</span>):\n        <span class="fn">super()</span>.describe()\n        print(<span class="st">"✨ [EDP] 깊고 풍부한 잔향이 오래 유지되는 고농축 제품입니다."</span>)\n\n    <span class="kw">def</span> <span class="fn">recommend_weather</span>(<span class="pm">self</span>):\n        print(<span class="st">"추천 계절: 서늘한 가을이나 추운 겨울"</span>)`,
+  'eau_de_toilette.py':`<span class="kw">from</span> perfume <span class="kw">import</span> Perfume\n\n<span class="kw">class</span> <span class="cl">EauDeToilette</span>(<span class="cl">Perfume</span>):\n    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="pm">self</span>, name, brand, scent_family, mood):\n        <span class="fn">super()</span>.__init__(name, brand, scent_family, mood, <span class="st">"3~5시간"</span>)\n\n    <span class="kw">def</span> <span class="fn">describe</span>(<span class="pm">self</span>):\n        <span class="fn">super()</span>.describe()\n        print(<span class="st">"🌿 [EDT] 가벼운 농도로 일상에서 부담 없이 사용하기 좋습니다."</span>)\n\n    <span class="kw">def</span> <span class="fn">recommend_weather</span>(<span class="pm">self</span>):\n        print(<span class="st">"추천 계절: 따뜻한 봄이나 초여름"</span>)`,
+  'cologne.py':`<span class="kw">from</span> perfume <span class="kw">import</span> Perfume\n\n<span class="kw">class</span> <span class="cl">Cologne</span>(<span class="cl">Perfume</span>):\n    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="pm">self</span>, name, brand, scent_family, mood):\n        <span class="fn">super()</span>.__init__(name, brand, scent_family, mood, <span class="st">"1~2시간"</span>)\n\n    <span class="kw">def</span> <span class="fn">describe</span>(<span class="pm">self</span>):\n        <span class="fn">super()</span>.describe()\n        print(f<span class="st">"🍋 [Cologne] 달달한 {self._scent_family} 향취로 리프레시하기 좋습니다."</span>)\n\n    <span class="kw">def</span> <span class="fn">recommend_weather</span>(<span class="pm">self</span>):\n        print(<span class="st">"추천 계절: 꽃이 만연한 봄"</span>)`,
+  'main.py':`<span class="kw">from</span> cologne <span class="kw">import</span> Cologne\n<span class="kw">from</span> eau_de_toilette <span class="kw">import</span> EauDeToilette\n<span class="kw">from</span> eau_de_parfum <span class="kw">import</span> EauDeParfum\n\n<span class="cm"># 객체 생성 및 리스트 관리</span>\nperfume_collection = [\n    <span class="cl">Cologne</span>(<span class="st">"Blackberry & Bay"</span>,      <span class="st">"Jo Malone"</span>,        <span class="st">"Fruity"</span>,        <span class="st">"Fresh"</span>),\n    <span class="cl">Cologne</span>(<span class="st">"Wood Sage & Sea Salt"</span>,  <span class="st">"Jo Malone"</span>,        <span class="st">"Woody/Marine"</span>,  <span class="st">"Natural"</span>),\n    <span class="cl">EauDeToilette</span>(<span class="st">"Lazy Sunday Morning"</span>,  <span class="st">"Maison Margiela"</span>,  <span class="st">"Floral/Musk"</span>,   <span class="st">"Clean"</span>),\n    <span class="cl">EauDeToilette</span>(<span class="st">"Un Jardin sur le Nil"</span>, <span class="st">"Hermes"</span>,           <span class="st">"Green/Fresh"</span>,   <span class="st">"Peaceful"</span>),\n    <span class="cl">EauDeParfum</span>(<span class="st">"Santal 33"</span>,           <span class="st">"Le Labo"</span>,          <span class="st">"Woody"</span>,         <span class="st">"Chic"</span>),\n    <span class="cl">EauDeParfum</span>(<span class="st">"Blanche"</span>,             <span class="st">"Byredo"</span>,           <span class="st">"Floral/Musk"</span>,   <span class="st">"Pure"</span>),\n    <span class="cl">EauDeParfum</span>(<span class="st">"Sauvage"</span>,             <span class="st">"Dior"</span>,             <span class="st">"Aromatic"</span>,      <span class="st">"Masculine"</span>),\n]\n\n<span class="cm"># 다형성: 동일한 인터페이스, 타입별 다른 동작</span>\n<span class="kw">for</span> perfume <span class="kw">in</span> perfume_collection:\n    perfume.describe()           <span class="cm"># → 타입마다 다른 출력</span>\n    perfume.recommend_weather()  <span class="cm"># → 타입마다 다른 계절 추천</span>\n    print(<span class="st">"-"</span> * 45)`
+};
+
+function buildSources(){
+  const tabs=document.getElementById('src-tabs');
+  const panels=document.getElementById('src-panels');
+  Object.keys(SOURCES).forEach((f,i)=>{
+    const btn=document.createElement('button');
+    btn.className='src-tab'+(i===0?' active':'');
+    btn.textContent=f;
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.src-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.code-block').forEach(p=>p.classList.remove('visible'));
+      btn.classList.add('active');
+      document.getElementById('src-'+f).classList.add('visible');
+    });
+    tabs.appendChild(btn);
+    const pre=document.createElement('pre');
+    pre.className='code-block'+(i===0?' visible':'');
+    pre.id='src-'+f;
+    pre.innerHTML=SOURCES[f];
+    panels.appendChild(pre);
+  });
+}
+
+buildCollection();
+buildSources();
+</script>
+</body>
+</html>
